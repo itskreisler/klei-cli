@@ -15,7 +15,7 @@ jspm_packages/
 # Build directories
 dist/
 build/
-bin/
+bin/**
 # Environment variables
 .env
 .env.local

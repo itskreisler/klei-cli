@@ -34,8 +34,8 @@ const questionsMain = [
         name: 'projectInstall',
         message: ' ¿Quieres instalar dependencias?',
         choices: [
-            { name: 'Sí', value: true },
-            { name: 'No', value: false }
+            { name: 'No', value: false },
+            { name: 'Sí', value: true }
         ]
     },
     {

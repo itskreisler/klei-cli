@@ -1,0 +1,30 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": [
+      "dom",
+      "ES2015",
+      "ES2024",
+    ],
+    "module": "ESNext",
+    "target": "ESNext",
+    "allowJs": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+  },
+  "include": [
+    "./src/**/*.ts",
+  ],
+  "exclude": [
+    "dist",
+    "build",
+    "node_modules",
+    "bin",
+    "test",
+    "docs"
+  ]
+}

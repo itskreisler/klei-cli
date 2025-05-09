@@ -1,0 +1,74 @@
+{
+  "name": "klei-cli",
+  "version": "1.0.4",
+  "description": "cli for creating and managing packages",
+  "type": "module",
+  "funding": {
+    "type": "buymeacoffee",
+    "url": "https://www.buymeacoffee.com/kreisler"
+  },
+  "scripts": {
+    "start": "node ./bin/cli.js",
+    "w": "tsup --entry.cli src/index.ts --watch --onSuccess \"node bin/cli.js\"",
+    "b": "rm -rf bin/** && tsup",
+    "n:latest": "npm install -g npm@latest",
+    "p:latest": "pnpm add -g pnpm",
+    "p:update": "corepack install -g pnpm@10.4.1",
+    "pp": "npm run b && npm publish --access public",
+    "n:cache": "npm config get cache"
+  },
+  "files": [
+    "bin/**"
+  ],
+  "main": "bin/cli.js",
+  "bin": {
+    "klei": "./bin/cli.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/itskreisler/klei.git"
+  },
+  "homepage": "https://github.com/itskreisler/klei#readme",
+  "bugs": {
+    "url": "https://github.com/itskreisler/klei/issues"
+  },
+  "keywords": [
+    "cli",
+    "packages"
+  ],
+  "author": "kreisler <tempkreisler@outlook.com> (https://linktr.ee/itskreisler)",
+  "contributors": [
+    {
+      "name": "Kreisler Ramirez Sierra",
+      "email": "tempkreisler@outlook.com",
+      "url": "https://linktr.ee/itskreisler"
+    }
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@eslint/js": "^9.21.0",
+    "@types/assert": "^1.5.11",
+    "@types/cross-spawn": "^6.0.6",
+    "@types/figlet": "^1.7.0",
+    "@types/node": "^22.13.5",
+    "eslint": "^9.21.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.25.0"
+  },
+  "packageManager": "pnpm@10.10.0+sha512.d615db246fe70f25dcfea6d8d73dee782ce23e2245e3c4f6f888249fb568149318637dca73c2c5c8ef2a4ca0d5657fb9567188bfab47f566d1ee6ce987815c39",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  },
+  "dependencies": {
+    "chalk": "^5.4.1",
+    "commander": "^13.1.0",
+    "cross-spawn": "^7.0.6",
+    "figlet": "^1.8.0",
+    "inquirer": "^12.4.2",
+    "ora": "^8.2.0",
+    "simple-git": "^3.27.0"
+  }
+}

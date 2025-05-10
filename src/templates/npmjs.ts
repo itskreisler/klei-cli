@@ -18,10 +18,10 @@ export const npmjs = [
             scripts: {
                 start: 'tsx src/index.ts',
                 xtart: 'npx -y tsx src/index.ts',
-                watch: 'tsup --entry.index src/index.ts --watch --onSuccess "node dist/index.js"',
-                build: 'tsup --entry.index src/index.ts --format esm,cjs --dts',
-                'test:esm': 'tsup --entry.test src/index.ts --format esm --watch --onSuccess "node dist/test.js"',
-                'test:spec': 'tsup test/test.spec.ts --format esm --onSuccess "cross-env NODE_ENV=test node --test dist/test.spec.js"'
+                watch: 'tsup --entry.index src/index.ts --format esm --clean --watch --onSuccess "node dist/index.js"',
+                build: 'tsup --entry.index src/index.ts --format esm,cjs --dts --clean',
+                'test:esm': 'tsup --entry.test src/index.ts --format esm --clean --onSuccess "node dist/test.js"',
+                'test:spec': 'tsup test/test.spec.ts --format esm --clean --onSuccess "cross-env NODE_ENV=test node --test dist/test.spec.js"'
             },
             keywords: [],
             author: '',
@@ -31,7 +31,7 @@ export const npmjs = [
                 '@eslint/js': 'latest',
                 // "@types/assert": 'latest',
                 '@types/node': 'latest',
-                // 'cross-env': 'latest',
+                'cross-env': 'latest',
                 eslint: 'latest',
                 nodemon: 'latest',
                 'ts-node': 'latest',
@@ -61,15 +61,16 @@ export default defineConfig(${JSON.stringify({
             $schema: 'https://json.schemastore.org/tsconfig',
             display: 'Default',
             compilerOptions: {
-                target: 'ES2016',
-                module: 'CommonJS',
-                outDir: './dist',
-                rootDir: './src',
+                target: 'ES2024',
+                module: 'ES2022',
+                // outDir: './dist',
+                // rootDir: './src',
                 strict: true,
                 esModuleInterop: true,
                 skipLibCheck: true,
                 forceConsistentCasingInFileNames: true,
                 declaration: true,
+                moduleResolution: 'node',
                 resolveJsonModule: true,
                 noUnusedLocals: false,
                 noImplicitThis: false,
@@ -81,8 +82,8 @@ export default defineConfig(${JSON.stringify({
                     ]
                 }
             },
-            include: ['src/**/*'],
-            exclude: ['node_modules', '**.spec.ts', 'dist', 'build', 'docs']
+            include: ['.'],
+            exclude: ['node_modules', 'dist', 'build', 'docs']
         }, null, 2),
         pathFileName: 'tsconfig.json'
     },
@@ -101,12 +102,12 @@ interface User {
 type GreetUser = (user: User) => string;
 
 // Example implementation of the GreetUser function
-const greetUser: GreetUser = (user) => {
+export const greetUser: GreetUser = (user) => {
     return \`Hello, \${user.name}! Your email is \${user.email}.\`;
 };
 
 // Example usage
-const exampleUser: User = {
+export const exampleUser: User = {
     id: 1,
     name: 'John Doe',
     email: 'john.doe@example.com',
@@ -146,6 +147,27 @@ export default tseslint.config(
   }
 )`,
         pathFileName: 'eslint.config.mjs'
+    },
+    {
+        content: `// ━━ IMPORT MODULES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// » IMPORT NATIVE NODE MODULES
+
+import { describe, it } from 'node:test'
+
+import assert from 'node:assert'
+
+// » IMPORT MODULES
+import { greetUser, exampleUser } from '@/index'
+
+// ━━ TEST ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+describe('greetUser', () => {
+    it('should return a greeting message with the provided name', () => {
+        const result = greetUser(exampleUser)
+        assert.strictEqual(result, 'Hello, John Doe! Your email is john.doe@example.com.')
+    })
+})`,
+        pathFileName: 'test/test.spec.ts'
     }
 ] as {
     content: string

@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 import chalk from 'chalk'
 import { program } from 'commander'
+import fs from 'fs'
 // import helpCommand from '@/commands/help'
 // import saludarCommand from '@/commands/saludar'
 import { printBanner } from '@/utils/banner'
 import createCommand from '@/commands/create'
 
 const { version } = JSON.parse(
-    await import('fs').then(fs => fs.readFileSync(new URL('../package.json', import.meta.url), 'utf-8'))
+    fs.readFileSync(new URL('../package.json', import.meta.url), 'utf-8')
 ) as { version: string }
 
 printBanner()

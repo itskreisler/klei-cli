@@ -14,16 +14,44 @@ import process from 'node:process'
 import console from 'node:console'
 
 // ------------------------------------------------------------------------------
+// Types
+// ------------------------------------------------------------------------------
+
+interface PackageNameParsed {
+    name: string
+    version: string
+}
+
+interface CheckOptions {
+    dependencies?: boolean
+    devDependencies?: boolean
+    startDir?: string
+}
+
+interface PackageJson {
+    name?: string
+    version?: string
+    type?: 'module' | 'commonjs'
+    dependencies?: Record<string, string>
+    devDependencies?: Record<string, string>
+    [key: string]: any
+}
+
+interface SpawnError extends Error {
+    code?: string
+}
+
+// ------------------------------------------------------------------------------
 // Helpers
 // ------------------------------------------------------------------------------
 
 /**
  * Find the closest package.json file, starting at process.cwd (by default),
  * and working up to root.
- * @param {string} [startDir=process.cwd()] Starting directory
- * @returns {string} Absolute path to closest package.json file
+ * @param startDir Starting directory
+ * @returns Absolute path to closest package.json file
  */
-function findPackageJson(startDir) {
+function findPackageJson(startDir?: string): string | null {
     let dir = path.resolve(startDir || process.cwd())
 
     do {
@@ -44,16 +72,26 @@ function findPackageJson(startDir) {
 
 /**
  * Install node modules synchronously and save to devDependencies in package.json
- * @param {string|string[]} packages Node module or modules to install
- * @param {string} packageManager Package manager to use for installation.
- * @param {string[]} installFlags Flags to pass to the package manager.
- * @returns {void}
+ * @param packages Node module or modules to install
+ * @param packageManager Package manager to use for installation.
+ * @param cwd Current working directory for installation
+ * @param installFlags Flags to pass to the package manager.
+ * @returns void
  */
-function installSyncSaveDev(packages, packageManager = 'npm', cwd,installFlags = ['-D']) {
+function installSyncSaveDev(
+    packages: string | string[],
+    packageManager = 'npm',
+    cwd?: string,
+    installFlags: string[] = ['-D']
+): void {
     const packageList = Array.isArray(packages) ? packages : [packages]
     const installCmd = packageManager === 'yarn' ? 'add' : 'install'
-    const installProcess = spawn.sync(packageManager, [installCmd, ...installFlags].concat(packageList), { stdio: 'inherit', cwd })
-    const error = installProcess.error
+    const installProcess = spawn.sync(
+        packageManager,
+        [installCmd, ...installFlags].concat(packageList),
+        { stdio: 'inherit', cwd }
+    )
+    const error = installProcess.error as SpawnError
 
     if (error && error.code === 'ENOENT') {
         const pluralS = packageList.length > 1 ? 's' : ''
@@ -64,10 +102,10 @@ function installSyncSaveDev(packages, packageManager = 'npm', cwd,installFlags =
 
 /**
  * Parses a package name string into its name and version components.
- * @param {string} packageName The package name to parse.
- * @returns {{ name: string, version: string }} An object with 'name' and 'version' properties.
+ * @param packageName The package name to parse.
+ * @returns An object with 'name' and 'version' properties.
  */
-function parsePackageName(packageName) {
+function parsePackageName(packageName: string): PackageNameParsed {
     const atIndex = packageName.lastIndexOf('@')
 
     if (atIndex > 0) {
@@ -77,25 +115,23 @@ function parsePackageName(packageName) {
         return { name, version }
     }
     return { name: packageName, version: 'latest' }
-
 }
 
 /**
  * Fetch `peerDependencies` of the given package by `npm show` command.
- * @param {string} packageName The package name to fetch peerDependencies.
- * @returns {Object} Gotten peerDependencies. Returns null if npm was not found.
+ * @param packageName The package name to fetch peerDependencies.
+ * @returns Gotten peerDependencies. Returns null if npm was not found.
  */
-async function fetchPeerDependencies(packageName) {
+async function fetchPeerDependencies(packageName: string): Promise<string[] | null> {
     const npmProcess = spawn.sync(
         'npm',
         ['show', '--json', packageName, 'peerDependencies'],
         { encoding: 'utf8' }
     )
 
-    const error = npmProcess.error
+    const error = npmProcess.error as SpawnError
 
     if (error && error.code === 'ENOENT') {
-
         // Fallback to using the npm registry API directly when npm is not available.
         const { name, version } = parsePackageName(packageName)
 
@@ -105,7 +141,7 @@ async function fetchPeerDependencies(packageName) {
             const data = await response.json()
 
             const resolvedVersion =
-        version === 'latest' ? data['dist-tags']?.latest : version
+                version === 'latest' ? data['dist-tags']?.latest : version
             const packageVersion = data.versions[resolvedVersion]
 
             if (!packageVersion) {
@@ -113,19 +149,18 @@ async function fetchPeerDependencies(packageName) {
                     `Version "${version}" not found for package "${name}".`
                 )
             }
-            return Object.entries(packageVersion.peerDependencies).map(
+            return Object.entries(packageVersion.peerDependencies || {}).map(
                 ([pkgName, pkgVersion]) => `${pkgName}@${pkgVersion}`
             )
         } catch {
-
             // TODO: should throw an error instead of returning null
             return null
         }
     }
-    const fetchedText = npmProcess.stdout.trim()
 
+    const fetchedText = npmProcess.stdout?.trim() || ''
     const peers = JSON.parse(fetchedText || '{}')
-    const dependencies = []
+    const dependencies: string[] = []
 
     Object.keys(peers).forEach(pkgName => {
         dependencies.push(`${pkgName}@${peers[pkgName]}`)
@@ -136,32 +171,28 @@ async function fetchPeerDependencies(packageName) {
 
 /**
  * Check whether node modules are include in a project's package.json.
- * @param {string[]} packages Array of node module names
- * @param {Object} opt Options Object
- * @param {boolean} opt.dependencies Set to true to check for direct dependencies
- * @param {boolean} opt.devDependencies Set to true to check for development dependencies
- * @param {boolean} opt.startdir Directory to begin searching from
+ * @param packages Array of node module names
+ * @param opt Options Object
  * @throws {Error} If cannot find valid `package.json` file.
- * @returns {Object} An object whose keys are the module names
- *                                        and values are booleans indicating installation.
+ * @returns An object whose keys are the module names and values are booleans indicating installation.
  */
-function check(packages, opt) {
-    const deps = new Set()
-    const pkgJson = (opt) ? findPackageJson(opt.startDir) : findPackageJson()
+function check(packages: string[], opt?: CheckOptions): Record<string, boolean> {
+    const deps = new Set<string>()
+    const pkgJson = opt?.startDir ? findPackageJson(opt.startDir) : findPackageJson()
 
     if (!pkgJson) {
         throw new Error("Could not find a package.json file. Run 'npm init' to create one.")
     }
 
-    const fileJson = JSON.parse(fs.readFileSync(pkgJson, 'utf8'));
+    const fileJson: PackageJson = JSON.parse(fs.readFileSync(pkgJson, 'utf8'))
 
-    ['dependencies', 'devDependencies'].forEach(key => {
-        if (opt[key] && typeof fileJson[key] === 'object') {
-            Object.keys(fileJson[key]).forEach(dep => deps.add(dep))
-        }
-    })
+        ; (['dependencies', 'devDependencies'] as const).forEach(key => {
+            if (opt?.[key] && typeof fileJson[key] === 'object') {
+                Object.keys(fileJson[key] || {}).forEach(dep => deps.add(dep))
+            }
+        })
 
-    return packages.reduce((status, pkg) => {
+    return packages.reduce((status: Record<string, boolean>, pkg) => {
         status[pkg] = deps.has(pkg)
         return status
     }, {})
@@ -172,12 +203,11 @@ function check(packages, opt) {
  * package.json.
  *
  * Convenience wrapper around check().
- * @param {string[]} packages Array of node modules to check.
- * @param {string} rootDir The directory containing a package.json
- * @returns {Object} An object whose keys are the module names
- *                               and values are booleans indicating installation.
+ * @param packages Array of node modules to check.
+ * @param rootDir The directory containing a package.json
+ * @returns An object whose keys are the module names and values are booleans indicating installation.
  */
-function checkDeps(packages, rootDir) {
+function checkDeps(packages: string[], rootDir?: string): Record<string, boolean> {
     return check(packages, { dependencies: true, startDir: rootDir })
 }
 
@@ -186,32 +216,30 @@ function checkDeps(packages, rootDir) {
  * package.json.
  *
  * Convenience wrapper around check().
- * @param {string[]} packages Array of node modules to check.
- * @returns {Object} An object whose keys are the module names
- *                               and values are booleans indicating installation.
+ * @param packages Array of node modules to check.
+ * @returns An object whose keys are the module names and values are booleans indicating installation.
  */
-function checkDevDeps(packages) {
+function checkDevDeps(packages: string[]): Record<string, boolean> {
     return check(packages, { devDependencies: true })
 }
 
 /**
  * Check whether package.json is found in current path.
- * @param {string} [startDir] Starting directory
- * @returns {boolean} Whether a package.json is found in current path.
+ * @param startDir Starting directory
+ * @returns Whether a package.json is found in current path.
  */
-function checkPackageJson(startDir) {
+function checkPackageJson(startDir?: string): boolean {
     return !!findPackageJson(startDir)
 }
 
 /**
  * check if the package.type === "module"
- * @param {string} pkgJSONPath path to package.json
- * @returns {boolean} return true if the package.type === "module"
+ * @param pkgJSONPath path to package.json
+ * @returns return true if the package.type === "module"
  */
-function isPackageTypeModule(pkgJSONPath) {
-
+function isPackageTypeModule(pkgJSONPath?: string): boolean {
     if (pkgJSONPath) {
-        const pkgJSONContents = JSON.parse(fs.readFileSync(pkgJSONPath, 'utf8'))
+        const pkgJSONContents: PackageJson = JSON.parse(fs.readFileSync(pkgJSONPath, 'utf8'))
 
         if (pkgJSONContents.type === 'module') {
             return true
@@ -223,12 +251,10 @@ function isPackageTypeModule(pkgJSONPath) {
 
 /**
  * Reads the content of a file at the specified path and returns it as a string.
- *
- * @param {fs.PathOrFileDescriptor} path - The path to the file to be read.
- *
+ * @param filePath The path to the file to be read.
  */
-export function getPkgs(path) {
-    return JSON.parse(fs.readFileSync(path, 'utf-8'))
+export function getPkgs(filePath: fs.PathOrFileDescriptor): PackageJson {
+    return JSON.parse(fs.readFileSync(filePath, 'utf-8'))
 }
 
 // ------------------------------------------------------------------------------
@@ -244,4 +270,10 @@ export {
     checkDevDeps,
     checkPackageJson,
     isPackageTypeModule
+}
+
+export type {
+    PackageNameParsed,
+    CheckOptions,
+    PackageJson
 }

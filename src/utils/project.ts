@@ -49,6 +49,50 @@ export const createProjectStructure = async (answers: Answers, spinner: Ora) => 
         for (const file of projectStr) {
             const { content, pathFileName } = file
             const filePath = path.join(projectDir, pathFileName)
+
+            // Manejo especial para package.json cuando se crea en el directorio actual
+            if (answers.projectName === '.' && pathFileName === 'package.json') {
+                spinner.info(`Actualizando ${chalk.yellow('package.json')} existente`)
+                try {
+                    const currentPackageJsonPath = path.join(process.cwd(), 'package.json')
+                    let currentPackageJson = {}
+
+                    // Leer package.json existente si existe
+                    if (fs.existsSync(currentPackageJsonPath)) {
+                        const currentContent = fs.readFileSync(currentPackageJsonPath, 'utf-8')
+                        currentPackageJson = JSON.parse(currentContent)
+                    }
+
+                    // Parsear el nuevo package.json de la plantilla
+                    const templatePackageJson = JSON.parse(content)
+
+                    // Fusionar dependencias
+                    const mergedPackageJson = {
+                        ...currentPackageJson,
+                        ...templatePackageJson,
+                        dependencies: {
+                            ...(currentPackageJson as any).dependencies,
+                            ...templatePackageJson.dependencies
+                        },
+                        devDependencies: {
+                            ...(currentPackageJson as any).devDependencies,
+                            ...templatePackageJson.devDependencies
+                        },
+                        scripts: {
+                            ...(currentPackageJson as any).scripts,
+                            ...templatePackageJson.scripts
+                        }
+                    }
+
+                    // Escribir el package.json actualizado
+                    fs.writeFileSync(currentPackageJsonPath, JSON.stringify(mergedPackageJson, null, 2))
+                    spinner.succeed(`${chalk.green('package.json actualizado exitosamente')}`)
+                } catch (error) {
+                    spinner.warn(`Error al actualizar package.json: ${error}`)
+                }
+                continue
+            }
+
             // Si se usa . y el directorio actual ya tiene los archivos, se lanza un advertencia
             if (answers.projectName === '.' && fs.existsSync(filePath)) {
                 spinner.warn(`El archivo ${chalk.yellow(filePath)} ya existe. Se omitirá su creación.`)

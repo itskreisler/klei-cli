@@ -1,6 +1,6 @@
 {
   "name": "klei-cli",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "cli for creating and managing packages",
   "type": "module",
   "funding": {

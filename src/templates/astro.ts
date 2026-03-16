@@ -28,7 +28,7 @@ export const astro = [
                 '@astrojs/node': 'latest',
                 '@astrojs/react': 'latest',
                 '@astrojs/sitemap': 'latest',
-                '@astrojs/vercel': 'latest',
+                '@astrojs/vercel': '^8.0.4',
                 '@kreisler/i18n': 'latest',
                 '@kreisler/vite-pwa-astro': 'latest',
                 '@tailwindcss/vite': 'latest',

@@ -21,7 +21,8 @@ export const npmjs = [
                 watch: 'tsup --entry.index src/index.ts --format esm --clean --watch --onSuccess "node dist/index.js"',
                 build: 'tsup --entry.index src/index.ts --format esm,cjs --dts --clean',
                 'test:esm': 'tsup --entry.test src/index.ts --format esm --clean --onSuccess "node dist/test.js"',
-                'test:spec': 'tsup test/test.spec.ts --format esm --clean --onSuccess "cross-env NODE_ENV=test node --test dist/test.spec.js"'
+                'test:spec': 'tsup test/test.spec.ts --format esm --clean --onSuccess "cross-env NODE_ENV=test node --test dist/test.spec.js"',
+                'publicar': 'npm publish --access public'
             },
             keywords: [],
             author: '',
@@ -143,8 +144,16 @@ export default tseslint.config(
         'comma-dangle': ['error', 'never'],
         'no-multiple-empty-lines': ['error', { max: 1 }],
         'no-async-promise-executor': 'off',
-        'no-unused-vars': 'warn',
-        '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }]
+        'no-unused-vars': 'off',
+        '@typescript-eslint/no-unused-vars': ['warn', {
+            argsIgnorePattern: '^_',
+            varsIgnorePattern: '^_',
+            ignoreRestSiblings: true,
+            destructuredArrayIgnorePattern: '^_',
+            args: 'after-used',
+            vars: 'all',
+            caughtErrors: 'none'
+        }]
     }
   }
 )`,

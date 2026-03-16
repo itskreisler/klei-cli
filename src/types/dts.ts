@@ -1,4 +1,4 @@
-export type TypeProject = 'npmjs' | 'monorepo'
+export type TypeProject = 'npmjs' | 'monorepo' | 'astro'
 
 export enum TypeInstall {
     npm = 'npm',

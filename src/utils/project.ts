@@ -5,6 +5,7 @@ import fs from 'fs'
 import { Answers } from '@/types/dts'
 import path from 'path'
 import { npmjs } from '@/templates/npmjs'
+import { astro } from '@/templates/astro'
 import { findPackageJson, getPkgs, installSyncSaveDev, parsePackageName } from '@/lib/utils/npm-utils'
 
 export const createProjectStructureGit = async (git: SimpleGit, projectDir: string, projectType: 'api' | 'cli' | 'monolith', spinner: Ora) => {
@@ -35,7 +36,8 @@ export const createProjectStructure = async (answers: Answers, spinner: Ora) => 
     return new Promise((resolve, reject) => {
         const projects = {
             npmjs,
-            monorepo: []
+            monorepo: [],
+            astro
         }
         const projectStr = projects[answers.projectType]
         if (!projectStr) {
@@ -116,7 +118,12 @@ export const createProjectStructure = async (answers: Answers, spinner: Ora) => 
                 .map((pkg) => pkg.name)
 
             spinner.info(`Instalando dependencias: ${chalk.yellow(pkgs.join(' '))}`)
-            installSyncSaveDev(pkgs, answers.projectPackageManager, projectDir)
+            
+            const installFlags = answers.projectType === 'astro' 
+                ? ['-D', '--legacy-peer-deps'] 
+                : ['-D']
+            
+            installSyncSaveDev(pkgs, answers.projectPackageManager, projectDir, installFlags)
             spinner.info(chalk.green('Dependencias instaladas exitosamente'))
         }
 

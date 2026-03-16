@@ -13,7 +13,8 @@ const questionsMain = [
         name: 'projectType',
         message: ' ¿Qué tipo de proyecto quieres crear?',
         choices: [
-            { name: 'npmjs package (Node.js)', value: 'npmjs' }
+            { name: 'npmjs package (Node.js)', value: 'npmjs' },
+            { name: 'Astro (Web framework)', value: 'astro' }
             // { name: 'Aplicación Monorepo (Node.js)', value: 'monorepo' }
             // { name: 'Aplicación CLI (Node.js)', value: 'cli' }
         ]
